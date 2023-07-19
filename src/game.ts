@@ -75,12 +75,7 @@ export class Game {
 
   private async setup() {
     this.session = await this.xr.requestSession("immersive-vr", {
-      optionalFeatures: [
-        "local-floor",
-        "bounded-floor",
-        "hand-tracking",
-        "layers",
-      ],
+      optionalFeatures: ["local"],
     });
 
     this.renderer = new WebGLRenderer({ antialias: true });
