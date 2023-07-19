@@ -20,6 +20,7 @@ import { MainMenuScene } from "./scenes/main-menu.scene";
 
 enum GamePhase {
   UNSUPPORTED,
+  WAITING_PERMISSION,
   LOADING,
   PLAYING,
   PAUSED,
@@ -77,9 +78,12 @@ export class Game {
     const isSessionSupported = await this.xr.isSessionSupported("immersive-vr");
     if (!isSessionSupported)
       throw new Error("WebXR is not supported on this device");
+
+    /*
     this.session = await this.xr.requestSession("immersive-vr", {
       optionalFeatures: ["local-floor"],
     });
+    */
 
     this.renderer = new WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -87,7 +91,10 @@ export class Game {
     this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = true;
     this.renderer.xr.enabled = true;
-    await this.renderer.xr.setSession(this.session);
+
+    document.body.appendChild(VRButton.createButton(this.renderer));
+
+    //await this.renderer.xr.setSession(this.session);
 
     this.container = document.createElement("div");
     document.body.appendChild(this.container);
