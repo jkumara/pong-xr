@@ -19730,12 +19730,7 @@
     }
     async setup() {
       this.session = await this.xr.requestSession("immersive-vr", {
-        optionalFeatures: [
-          "local-floor",
-          "bounded-floor",
-          "hand-tracking",
-          "layers"
-        ]
+        optionalFeatures: ["local"]
       });
       this.renderer = new WebGLRenderer({ antialias: true });
       this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -25878,7 +25873,7 @@ host this content on a secure origin for the best user experience.
   var webxr_polyfill_module_default = WebXRPolyfill;
 
   // src/index.ts
-  new Game(new webxr_polyfill_module_default()).start();
+  new Game(navigator.xr || new webxr_polyfill_module_default()).start();
 })();
 /*! Bundled license information:
 
