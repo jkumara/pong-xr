@@ -23,6 +23,7 @@
   "dependencies": {
     "esbuild": "0.18.14",
     "modern-normalize": "^2.0.0",
-    "three": "^0.154.0"
+    "three": "^0.154.0",
+    "webxr-polyfill": "^2.0.3"
   }
 }
