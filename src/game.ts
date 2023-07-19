@@ -17,10 +17,11 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { GameScene } from "./scenes/scene";
 import { MainMenuScene } from "./scenes/main-menu.scene";
+import { WebXrPrompt } from "./webxr-prompt";
 
 enum GamePhase {
   UNSUPPORTED,
-  WAITING_PERMISSION,
+  PROMPT_VR,
   LOADING,
   PLAYING,
   PAUSED,
@@ -50,9 +51,13 @@ export class Game {
 
   constructor(private readonly xr: XRSystem) {}
 
+  /**
+   * Initialize the game and start the main loop. Should be called only when the user
+   * has requested to enter VR mode.
+   */
   public async start() {
     try {
-      await this.setup();
+      await this.initialize();
       this.activeGameScene = new MainMenuScene();
       this.renderer.setAnimationLoop(() => this.update());
     } catch (error) {
@@ -62,28 +67,17 @@ export class Game {
   }
 
   public stop() {
+    this?.session?.end();
     this.renderer.setAnimationLoop(null);
   }
 
   /**
-   * The main game loop
+   * Initialize the camera and the WebGL renderer
    */
-  private update() {
-    const delta = this.clock.getDelta();
-    this.gameState = this.activeGameScene.update(delta, this.gameState);
-    this.renderer.render(this.activeGameScene.getScene(), this.camera);
-  }
-
-  private async setup() {
+  private async initialize() {
     const isSessionSupported = await this.xr.isSessionSupported("immersive-vr");
     if (!isSessionSupported)
       throw new Error("WebXR is not supported on this device");
-
-    /*
-    this.session = await this.xr.requestSession("immersive-vr", {
-      optionalFeatures: ["local-floor"],
-    });
-    */
 
     this.renderer = new WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -91,10 +85,6 @@ export class Game {
     this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = true;
     this.renderer.xr.enabled = true;
-
-    document.body.appendChild(VRButton.createButton(this.renderer));
-
-    //await this.renderer.xr.setSession(this.session);
 
     this.container = document.createElement("div");
     document.body.appendChild(this.container);
@@ -111,57 +101,33 @@ export class Game {
     controls.target.set(0, 1.6, 0);
     controls.update();
 
-    /*
-    // controllers
-
-    controller1 = renderer.xr.getController(0);
-    this.activeScene.add(controller1);
-
-    controller2 = renderer.xr.getController(1);
-    this.activeScene.add(controller2);
-
-    const controllerModelFactory = new XRControllerModelFactory();
-    const handModelFactory = new XRHandModelFactory();
-
-    // Hand 1
-    controllerGrip1 = renderer.xr.getControllerGrip(0);
-    controllerGrip1.add(
-      controllerModelFactory.createControllerModel(controllerGrip1)
-    );
-    this.activeScene.add(controllerGrip1);
-
-    hand1 = renderer.xr.getHand(0);
-    hand1.add(handModelFactory.createHandModel(hand1));
-
-    this.activeScene.add(hand1);
-
-    // Hand 2
-    controllerGrip2 = renderer.xr.getControllerGrip(1);
-    controllerGrip2.add(
-      controllerModelFactory.createControllerModel(controllerGrip2)
-    );
-    this.activeScene.add(controllerGrip2);
-
-    hand2 = renderer.xr.getHand(1);
-    hand2.add(handModelFactory.createHandModel(hand2));
-    this.activeScene.add(hand2);
-
-    //
-
-    const geometry = new BufferGeometry().setFromPoints([
-      new Vector3(0, 0, 0),
-      new Vector3(0, 0, -1),
-    ]);
-
-    const line = new Line(geometry);
-    line.name = "line";
-    line.scale.z = 5;
-
-    controller1.add(line.clone());
-    controller2.add(line.clone());
-    */
+    const prompt = new WebXrPrompt();
+    prompt.getButton().addEventListener("click", () => {
+      this.initializeXR();
+      prompt.setLoaded();
+    });
 
     window.addEventListener("resize", () => this.onWindowResize());
+  }
+
+  /**
+   * Initializes and attaches the WebXR session to the renderer. This must be done
+   * after user interaction (e.g. button click) to prevent the browser from blocking
+   */
+  async initializeXR() {
+    this.session = await this.xr.requestSession("immersive-vr", {
+      optionalFeatures: ["local-floor"],
+    });
+    await this.renderer.xr.setSession(this.session);
+  }
+
+  /**
+   * The main game loop
+   */
+  private update() {
+    const delta = this.clock.getDelta();
+    this.gameState = this.activeGameScene.update(delta, this.gameState);
+    this.renderer.render(this.activeGameScene.getScene(), this.camera);
   }
 
   private onWindowResize() {
