@@ -19712,8 +19712,8 @@
         await this.setup();
         this.activeGameScene = new MainMenuScene();
         this.renderer.setAnimationLoop(() => this.update());
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error(error);
         this.stop();
       }
     }
@@ -19729,8 +19729,11 @@
       this.renderer.render(this.activeGameScene.getScene(), this.camera);
     }
     async setup() {
+      const isSessionSupported = await this.xr.isSessionSupported("immersive-vr");
+      if (!isSessionSupported)
+        throw new Error("WebXR is not supported on this device");
       this.session = await this.xr.requestSession("immersive-vr", {
-        optionalFeatures: ["local"]
+        optionalFeatures: ["local-floor"]
       });
       this.renderer = new WebGLRenderer({ antialias: true });
       this.renderer.setPixelRatio(window.devicePixelRatio);
